@@ -1,8 +1,23 @@
 ### 目录
 
+[启动](#启动)
 [主应用配置](#主应用配置)
 [微应用配置](#微应用配置)
 [部署](#部署)
+
+### 启动
+
+1. 先启动微应用
+
+```
+cd sub-react
+
+npm i or yarn
+
+npm run start or yarn start
+```
+
+2. 再启用主应用，主应用启动同上
 
 ### 主应用配置
 
@@ -83,8 +98,8 @@ function render(props) {
   ReactDOM.render(
     <App />,
     container
-      ? container.querySelector("#root")
-      : document.querySelector("#root")
+      ? container.querySelector("#sub-react-root")
+      : document.querySelector("#sub-react-root")
   );
 }
 
@@ -105,8 +120,8 @@ export async function unmount(props) {
   const { container } = props;
   ReactDOM.unmountComponentAtNode(
     container
-      ? container.querySelector("#root")
-      : document.querySelector("#root")
+      ? container.querySelector("#sub-react-root")
+      : document.querySelector("#sub-react-root")
   );
 }
 
@@ -173,19 +188,33 @@ const { name } = require('./package');
 主应用 nginx 配置
 
 ```
-location /sub-react/ {
-    proxy_pass http://10.83.20.126:7002/sub-react/;
-    proxy_set_header Host 10.83.20.125:7002;
-}
+  server {
+    listen       7002;
+    server_name  10.83.20.125;
+
+    location / {
+                root   /etc/nginx/build;
+                index  index.html index.htm;
+    }
+    location /sub-react/ {
+        proxy_pass http://10.83.20.126:7002/sub-react/;
+        proxy_set_header Host 10.83.20.125:7002;
+    }
+  }
 ```
 
 微应用 nginx 配置
 
 ```
-location / {
-    root   /etc/nginx/sub;
-    # 注意这个下面这个index配置
-    # 微应用build完的静态资源包路径在/etc/nginx/sub/sub-react目录
-    index  index.html sub-react/index.html;
+ server {
+    listen       7002;
+    server_name  10.83.20.126;
+
+    location / {
+        root   /etc/nginx/sub;
+        # 注意这个下面这个index配置
+        # 微应用build完的静态资源包路径在/etc/nginx/sub/sub-react目录
+        index  index.html sub-react/index.html;
+    }
 }
 ```
