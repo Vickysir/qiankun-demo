@@ -37,9 +37,9 @@ import { registerMicroApps, start } from "qiankun";
 registerMicroApps([
   {
     name: "sub-react",
-    entry: "//localhost:7002",
-    container: "#root",
-    activeRule: "/my-sub-react",
+    entry: "//localhost:7002/sub-react/",
+    container: "#subapp-viewport",
+    activeRule: "/child-sub-react",
   },
 ]);
 // 启动 qiankun
@@ -135,7 +135,8 @@ const { name } = require('./package');
     webpack: config => {
       config.output.library = `${name}-[name]`;
       config.output.libraryTarget = 'umd';
-      config.output.chunkLoadingGlobal = `webpackJsonp_${name}`; //output.jsonpFunction 已更新为 => output.chunkLoadingGlobal
+      config.output.chunkLoadingGlobal = `webpackJsonp_${name}`; //output.jsonpFunction 已更新为 => output.chunkLoadingGlobal,
+      config.output.publicPath=`/sub-react/`;
       return config;
     },
     devServer: (configFunction) => {
@@ -155,4 +156,36 @@ const { name } = require('./package');
   }
 ```
 
+5. 设置 history 模式路由的 base
+
+```tsx
+<BrowserRouter
+  basename={window.__POWERED_BY_QIANKUN__ ? "/child-sub-react" : "/"}
+>
+  <App />
+</BrowserRouter>
+```
+
 ### 部署
+
+1. 主应用和微应用部署在不同的服务器，使用 Nginx 代理访问
+
+主应用 nginx 配置
+
+```
+location /sub-react/ {
+    proxy_pass http://10.83.20.126:7002/sub-react/;
+    proxy_set_header Host 10.83.20.125:7002;
+}
+```
+
+微应用 nginx 配置
+
+```
+location / {
+    root   /etc/nginx/sub;
+    # 注意这个下面这个index配置
+    # 微应用build完的静态资源包路径在/etc/nginx/sub/sub-react目录
+    index  index.html sub-react/index.html;
+}
+```
