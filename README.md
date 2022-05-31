@@ -143,32 +143,43 @@ $ npm i -D react-app-rewired
 
 在 src 目录下新增 config-overrides.js 文件
 
-```
-const { name } = require('./package');
+```js
+const { name } = require("./package");
 
-  module.exports = {
-    webpack: config => {
-      config.output.library = `${name}-[name]`;
-      config.output.libraryTarget = 'umd';
-      config.output.chunkLoadingGlobal = `webpackJsonp_${name}`; //output.jsonpFunction 已更新为 => output.chunkLoadingGlobal,
-      config.output.publicPath=`/sub-react/`;
+module.exports = {
+  webpack: (config) => {
+    config.output.library = `${name}-[name]`;
+    config.output.libraryTarget = "umd";
+    config.output.chunkLoadingGlobal = `webpackJsonp_${name}`; //output.jsonpFunction 已更新为 => output.chunkLoadingGlobal,
+    config.output.publicPath = `/sub-react/`;
+    return config;
+  },
+  devServer: (configFunction) => {
+    return (proxy, allowedHost) => {
+      const config = configFunction(proxy, allowedHost);
+      config.historyApiFallback = true;
+      config.open = false;
+      config.hot = false;
+      config.static = false;
+      config.liveReload = false;
+      config.headers = {
+        "Access-Control-Allow-Origin": "*",
+      };
       return config;
-    },
-    devServer: (configFunction) => {
-      return (proxy, allowedHost) => {
-        const config = configFunction(proxy, allowedHost);
-        config.historyApiFallback = true;
-        config.open = false;
-        config.hot = false;
-        config.static = false;
-        config.liveReload = false;
-        config.headers = {
-          'Access-Control-Allow-Origin': '*',
-        };
-        return config;
-      }
-    }
-  }
+    };
+  },
+};
+```
+
+修改 package.json 中的 scripts
+
+```js
+"scripts": {
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
+  },
 ```
 
 5. 设置 history 模式路由的 base
@@ -185,7 +196,10 @@ const { name } = require('./package');
 
 1. 主应用和微应用部署在不同的服务器，使用 Nginx 代理访问
 
-主应用 nginx 配置
+- 将主应用的工程代码放到服务器任意目录下
+- 在主应用根目录执行`sh deploy.sh`,脚本会安装工程依赖，打包，并将 build 包放置`/etc/nginx/build`目录下
+- 主应用 nginx 配置
+  进入 nginx 配置目录`cd /etc/nginx/ `，查看 nginx 配置文件`vi nginx.conf`，重点配置内容如下：
 
 ```
   server {
@@ -204,6 +218,8 @@ const { name } = require('./package');
 ```
 
 微应用 nginx 配置
+
+微应用部署同上，重点配置内容如下：
 
 ```
  server {
